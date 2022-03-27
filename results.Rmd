@@ -1,0 +1,31 @@
+---
+title: "results - automobile-survival"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE, fig.path = "figures/", dev = c("png", "pdf"), dpi = 400)
+```
+
+## Causality map
+
+```mermaid
+graph TD
+   A[Characteristics of the car]
+   B(Price)
+   C(Time of sale)
+   D[Economic environment]
+   A --> B
+   A --> C
+   B --> C
+   C --> B
+   D -..-> B
+   D -..-> C
+```
+
+## Setup
+
+```{r}
+library(tidyverse)
+```
+
