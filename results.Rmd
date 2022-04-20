@@ -99,7 +99,7 @@ cars_data %>%
   sample_n(10000) %>% 
   rename_all(NiceName) %>% 
   select(names_to_select) %>% 
-  select(- id) %>% 
+  select(- Id) %>% 
   rename_all(str_to_sentence) %>% 
   rename_all(str_replace, " mot", " MOT") %>% 
   visdat::vis_miss() +
@@ -220,7 +220,7 @@ df %>%
   mutate(
     p_brand = n_brand / n(),
     brand = str_c(brand, " (", scales::percent(p_brand, .1), ")")
-    ) %>% 
+  ) %>% 
   mutate(
     brand = fct_lump(brand, n = 10),
     brand = fct_reorder(brand, price),
@@ -348,7 +348,7 @@ base_tune %>%
   mutate(
     model = NiceNameModel(model),
     runtime = format(runtime, digits = 0, big.mark = ",")
-    ) %>% 
+  ) %>% 
   rename(Model = 1, `Runtime (seconds)` = runtime) %>% 
   kable_output(caption = "Number of hyperparameteres, tested parameter combination and the total runtime of hyperparameter tuning.")
 ```
@@ -392,7 +392,7 @@ testing_tune <- base_tune %>%
   transmute(
     model, testing_mean = mean, testing_stderr = std_err,
     testing_ca = mean - std_err / (10^.5), testing_cf = mean + std_err / (10^.5)
-            ) %>% 
+  ) %>% 
   pivot_longer(-1) %>% 
   separate(name, c("set", "indicator"), "_")
 
@@ -415,7 +415,7 @@ validation_tune <- base_predict_folds2_df %>%
   summarise(mean = mean(rsq), stderr = sd(rsq), ca = mean - stderr / (10^.5), cf = mean + stderr / (10^.5)) %>%
   rename_at(-1, ~ str_c("validation_", .)) %>% 
   rename(model = name) %>% 
-    pivot_longer(-1) %>% 
+  pivot_longer(-1) %>% 
   separate(name, c("set", "indicator"), "_")
 ```
 
@@ -427,7 +427,7 @@ bind_rows(testing_tune, validation_tune) %>%
     mean_validation = ifelse(set == "validation", mean, 0),
     model = fct_reorder(model, mean_validation),
     set = str_to_sentence(set)
-    ) %>% 
+  ) %>% 
   ggplot(aes(y = model, group = set, color = set)) + 
   geom_errorbar(aes(xmin = ca, xmax = cf), position = position_dodge(width = .5)) + 
   geom_point(aes(x = mean), position= position_dodge(width = .5)) + 
@@ -445,7 +445,7 @@ load("data/surv_raw_df.RData")
 
 ```{r}
 surv_raw_df %>% 
-    mutate(
+  mutate(
     qb = lubridate::floor_date(date_end, "quarter"),
     qe = lubridate::ceiling_date(date_end, "quarter"),
     qb = gsub("-01$", "", qb),
@@ -768,6 +768,65 @@ cox_design_df %>%
   scale_color_manual(values = c("black", "red2"))
 ```
 
+### American
+
+```{r}
+survfit(formula = Surv(duration, sold) ~ amerikai_modell, data = total_surv_df) %>% 
+  broom::tidy() %>% 
+  group_by(strata) %>% 
+  filter(estimate >= .5) %>% 
+  slice_max(time, n = 1)
+```
+
+### Exhibit
+
+```{r}
+survfit(formula = Surv(duration, sold) ~ bemutato_jarmu, data = total_surv_df) %>% 
+  broom::tidy() %>% 
+  group_by(strata) %>% 
+  filter(estimate >= .5) %>% 
+  slice_max(time, n = 1)
+```
+
+### 
+
+```{r}
+survfit(formula = Surv(duration, sold) ~ henger_elrendezes, data = total_surv_df) %>% 
+  broom::tidy() %>% 
+  group_by(strata) %>% 
+  filter(estimate >= .5) %>% 
+  slice_max(time, n = 1)
+```
+
+```{r}
+total_surv_df %>% 
+  select(henger_elrendezes, where(is.numeric)) %>% 
+  group_by(henger_elrendezes) %>% 
+  summarise_all(mean)
+```
+
+
+```{r}
+total_surv_df %>% 
+  filter(henger_elrendezes == "Other") %>% 
+  count(brand, sort = TRUE) %>% 
+  mutate(p = n / sum(n))
+```
+
+```{r}
+survfit(formula = Surv(duration, sold) ~ bukolampa, data = total_surv_df) %>% 
+  broom::tidy() %>% 
+  group_by(strata) %>% 
+  filter(estimate >= .5) %>% 
+  slice_max(time, n = 1)
+```
+
+```{r}
+total_surv_df %>% 
+  select(2:7, bukolampa, -brand)
+```
+
+
 ## Robustness check
 
 ```{r}
@@ -808,7 +867,7 @@ y <- total_surv_df %>%
 fit_1se_r <- glmnet(x, y, family = "cox", lambda = cvfit$lambda.1se)
 ```
 
-```{r cvfit, fig.height=3}
+```{r fig.height=3}
 plot(cvfit)
 ```
 
@@ -825,7 +884,7 @@ cv_vip_r %>%
 ```
 
 ```{r}
-coef_1se_r <- broom::tidy(fit_1se) %>% 
+coef_1se_r <- broom::tidy(fit_1se_r) %>% 
   mutate(exp_estimate = exp(estimate))
 ```
 
@@ -838,7 +897,7 @@ fit_cox_r <- coef_1se_r %>%
   coxph(formula = Surv(duration, sold) ~ .)
 ```
 
-```{r}
+```{r coefs, fig.height=9}
 full_join(tidy(fit_cox, conf.int = T), tidy(fit_cox_r, conf.int = T), by = "term") %>% 
   filter(!is.na(estimate.x) & !is.na(estimate.y)) %>% 
   pivot_longer(-term) %>% 
@@ -850,13 +909,15 @@ full_join(tidy(fit_cox, conf.int = T), tidy(fit_cox_r, conf.int = T), by = "term
   pivot_wider() %>% 
   mutate(g = row_number() / n() > .5) %>% 
   ggplot(aes(y = term, color = model)) +
-  facet_wrap(~ g, scales = "free_y") +
+  # facet_wrap(~ g, scales = "free_y") +
   geom_vline(xintercept = 0) +
-  geom_point(aes(x = estimate)) +
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high)) +
+  geom_point(aes(x = estimate), position = position_dodge(width = .5), alpha = .8) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), position = position_dodge(width = .5), alpha = .8) +
+  theme_bw() +
   theme(
-    strip.text = element_blank()
+    strip.text = element_blank(),
+  ) +
+  labs(
+    color = NULL, x = "Estimated coefficient"
   )
 ```
-
-

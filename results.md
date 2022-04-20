@@ -53,6 +53,7 @@ library(survival)
 library(survminer)
 library(glmnet)
 library(granatlib)
+library(broom)
 ```
 
 ## Data
@@ -81,7 +82,7 @@ calendR::calendR(
 )
 ```
 
-![](figures/calendaer-1.png)<!-- -->
+![](figures/calendar-1.png)<!-- -->
 
 ``` r
 load("data/cars_data.RData")
@@ -110,12 +111,9 @@ cars_data %>%
     ## ℹ See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
     ## This message is displayed once per session.
 
-    ## Warning: `gather_()` was deprecated in tidyr 1.2.0.
-    ## Please use `gather()` instead.
-    ## This warning is displayed once every 8 hours.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
-
-![](figures/cars_visdat-1.png)<!-- -->
+    ## Error in `select()`:
+    ## ! Can't subset columns that don't exist.
+    ## x Column `id` doesn't exist.
 
 ``` r
 c("nyari_gumi_meret ~ brand + evjarat + sajat_tomeg",
@@ -175,10 +173,12 @@ load("data/setup.RData")
 df %>% 
   mutate(
     qb = lubridate::floor_date(date, "quarter"),
-    qb = gsub("-01$", "", qb),
     qe = lubridate::ceiling_date(date, "quarter"),
+    qb = gsub("-01$", "", qb),
     qe = gsub("-01$", "", qe),
-    Quarter = str_c(qb, "/", qe),
+    qb = str_replace(qb, "-", "/"),
+    qe = str_replace(qe, "-", "/"),
+    Quarter = str_c(qb, "-", qe),
   ) %>% 
   group_by(Quarter) %>% 
   tot_summarise(total_name = "Total",
@@ -195,10 +195,10 @@ df %>%
 
 | Quarter         |   Mean    |  Median   | Standard deviation | Skeness  | Kurtosis |
 |:----------------|:---------:|:---------:|:------------------:|:--------:|:--------:|
-| 2021-04/2021-07 | 3,710,100 | 1,949,000 |     4,821,653      | 2.795249 | 11.63271 |
-| 2021-07/2021-10 | 3,774,025 | 1,950,000 |     4,883,133      | 2.731550 | 11.19031 |
-| 2021-10/2022-01 | 3,904,783 | 1,990,000 |     5,057,759      | 2.626280 | 10.32879 |
-| 2022-01/2022-04 | 4,068,776 | 2,200,000 |     4,873,486      | 2.524668 | 10.10797 |
+| 2021/04-2021/07 | 3,710,100 | 1,949,000 |     4,821,653      | 2.795249 | 11.63271 |
+| 2021/07-2021/10 | 3,774,025 | 1,950,000 |     4,883,133      | 2.731550 | 11.19031 |
+| 2021/10-2022/01 | 3,904,783 | 1,990,000 |     5,057,759      | 2.626280 | 10.32879 |
+| 2022/01-2022/04 | 4,068,776 | 2,200,000 |     4,873,486      | 2.524668 | 10.10797 |
 | Total           | 3,871,298 | 1,999,000 |     4,931,980      | 2.659425 | 10.71338 |
 
 Descriptive statistics of offer prices.
@@ -372,6 +372,16 @@ ggsurvplot(
 
 ![](figures/km_quarterly-1.png)<!-- -->
 
+``` r
+broom::glance(km_all)
+```
+
+    ## # A tibble: 1 × 10
+    ##   records  n.max n.start events rmean rmean.std.error median conf.low conf.high
+    ##     <dbl>  <dbl>   <dbl>  <dbl> <dbl>           <dbl>  <dbl>    <dbl>     <dbl>
+    ## 1  530850 530850  530850 530850  21.1          0.0389     11       11        11
+    ## # … with 1 more variable: nobs <int>
+
 ### Pairs
 
 ``` r
@@ -429,7 +439,7 @@ df %>%
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](figures/unnamed-chunk-8-1.png)<!-- -->
+![](figures/unnamed-chunk-9-1.png)<!-- -->
 
 ## Fair price
 
@@ -499,7 +509,7 @@ base_tune %>%
   }
 ```
 
-![](figures/unnamed-chunk-11-1.png)<!-- -->
+![](figures/unnamed-chunk-12-1.png)<!-- -->
 
     ## 
     ## 
@@ -518,7 +528,7 @@ base_tune %>%
     ## |  595  |  17   |     3      |    0.05    |     0.0001     |   0.8412    |    16     |      0.9454       |
     ## | 1272  |   6   |     15     |   0.0098   |       0        |    0.951    |     9     |      0.9448       |
 
-![](figures/unnamed-chunk-11-2.png)<!-- -->
+![](figures/unnamed-chunk-12-2.png)<!-- -->
 
     ## 
     ## 
@@ -537,7 +547,7 @@ base_tune %>%
     ## |      6       |  0.001  |  510   |      0.9312       |
     ## |      5       |    0    |  405   |      0.9309       |
 
-![](figures/unnamed-chunk-11-3.png)<!-- -->
+![](figures/unnamed-chunk-12-3.png)<!-- -->
 
     ## 
     ## 
@@ -556,7 +566,7 @@ base_tune %>%
     ## |    14     | rectangular |   0.1868   |      0.8132       |
     ## |     9     |     inv     |   1.5549   |      0.8132       |
 
-![](figures/unnamed-chunk-11-4.png)<!-- -->
+![](figures/unnamed-chunk-12-4.png)<!-- -->
 
     ## 
     ## 
@@ -575,7 +585,7 @@ base_tune %>%
     ## |  58  |  19   |      0.9393       |
     ## |  41  |  22   |      0.9391       |
 
-![](figures/unnamed-chunk-11-5.png)<!-- -->
+![](figures/unnamed-chunk-12-5.png)<!-- -->
 
     ## 
     ## 
@@ -594,7 +604,7 @@ base_tune %>%
     ## | 8.9552  |  0.0002   | 0.0002 |      0.9103       |
     ## | 5.4173  |  0.0001   | 0.1546 |      0.9063       |
 
-![](figures/unnamed-chunk-11-6.png)<!-- -->
+![](figures/unnamed-chunk-12-6.png)<!-- -->
 
     ## 
     ## 
@@ -682,11 +692,51 @@ bind_rows(testing_tune, validation_tune) %>%
 
 ![](figures/tune_result-1.png)<!-- -->
 
+### Distribution
+
+``` r
+load("data/surv_raw_df.RData")
+```
+
+``` r
+surv_raw_df %>% 
+    mutate(
+    qb = lubridate::floor_date(date_end, "quarter"),
+    qe = lubridate::ceiling_date(date_end, "quarter"),
+    qb = gsub("-01$", "", qb),
+    qe = gsub("-01$", "", qe),
+    qb = str_replace(qb, "-", "/"),
+    qe = str_replace(qe, "-", "/"),
+    Quarter = str_c(qb, "-", qe),
+  ) %>% 
+  drop_na(price_diff) %>% 
+  group_by(Quarter) %>% 
+  tot_summarise(total_name = "Total",
+                `Min (%)` = min(price_diff),
+                `Lower quartile (%)` = quantile(price_diff, .25),
+                `Median (%)` = quantile(price_diff, .5),
+                `Higher quartile (%)` = quantile(price_diff, .75),
+                `Max (%)` = max(price_diff),
+                `Standard deviation (%p)` = scales::percent(sd(price_diff), accuracy = .01)
+  ) %>% 
+  mutate_at(2:6, ~ scales::percent(. - 1, .01)) %>% 
+  arrange(desc(Quarter)) %>% 
+  kable_output(caption = "Descriptive statistics of value-for-money.", .keep_lines = c(1, 2, -1, -2))
+```
+
+| Quarter         | Min (%) | Lower quartile (%) | Median (%) | Higher quartile (%) | Max (%) | Standard deviation (%p) |
+|:----------------|:-------:|:------------------:|:----------:|:-------------------:|:-------:|:-----------------------:|
+| 2021/04-2021/07 | -48.13% |       -2.83%       |   -0.08%   |        2.66%        | 61.95%  |          5.47%          |
+| 2021/07-2021/10 | -51.17% |       -2.69%       |   0.06%    |        2.87%        | 208.45% |          5.71%          |
+| 2021/10-2022/01 | -50.43% |       -2.75%       |   0.07%    |        2.96%        | 198.91% |          5.87%          |
+| 2022/01-2022/04 | -47.48% |       -2.63%       |   0.10%    |        2.89%        | 124.62% |          5.63%          |
+| Total           | -51.17% |       -2.72%       |   0.06%    |        2.89%        | 208.45% |          5.74%          |
+
+Descriptive statistics of value-for-money.
+
 ## Surv Lasso
 
 ``` r
-library(glmnet)
-library(survival)
 load("data/surv_raw_df.RData")
 
 n_used <- 1e4
@@ -713,7 +763,7 @@ cvfit <- cv.glmnet(x_cv, y_cv, family = "cox", type.measure = "C")
 granatlib::stoc()
 ```
 
-    ## surv_lasso10000: 64.811 sec elapsed
+    ## surv_lasso10000: 65.089 sec elapsed
 
 ``` r
 x <- total_surv_df %>% 
@@ -778,7 +828,7 @@ vip::vi(cvfit) %>%
 plot(fit_1se)
 ```
 
-![](figures/unnamed-chunk-17-1.png)<!-- -->
+![](figures/unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
 coef_1se <- broom::tidy(fit_1se) %>% 
@@ -868,6 +918,68 @@ fit_cox <- coef_1se %>%
     ## ℹ Use `all_of(.)` instead of `.` to silence this message.
     ## ℹ See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
     ## This message is displayed once per session.
+
+``` r
+cox.zph(fit_cox)
+```
+
+    ##                                              chisq df                    p
+    ## evjarat                                 1427.36851  1 < 0.0000000000000002
+    ## allapot                                   81.40059  4 < 0.0000000000000002
+    ## sebessegvalto_fokozatszam                245.08431  1 < 0.0000000000000002
+    ## nyari_gumi_meret2                       1415.34875  1 < 0.0000000000000002
+    ## ajtok_szama                               55.15219  3    0.000000000006372
+    ## henger_elrendezes                        246.89980  2 < 0.0000000000000002
+    ## pluss_karpit                             235.55886  1 < 0.0000000000000002
+    ## fuggonylegzsak                           197.38233  1 < 0.0000000000000002
+    ## allithato_kormany                          0.09382  1                0.759
+    ## savtarto_rendszer                        263.09142  1 < 0.0000000000000002
+    ## tabla_felismero_funkcio                  264.94569  1 < 0.0000000000000002
+    ## fekasszisztens                           239.67981  1 < 0.0000000000000002
+    ## riaszto                                   99.34332  1 < 0.0000000000000002
+    ## sebessegfuggo_szervokormany              239.01765  1 < 0.0000000000000002
+    ## elektromosan_behajthato_kulso_tukrok     384.33461  1 < 0.0000000000000002
+    ## futheto_tukor                            162.87934  1 < 0.0000000000000002
+    ## defektjavito_keszlet                     109.03875  1 < 0.0000000000000002
+    ## autobeszamitas_lehetseges                398.35564  1 < 0.0000000000000002
+    ## elso_forgalomba_helyezes_magyarorszagon  274.65863  1 < 0.0000000000000002
+    ## garancialis                               59.43391  1    0.000000000000013
+    ## rendelheto                              1330.55268  1 < 0.0000000000000002
+    ## allithato_hatso_ulesek                     0.00406  1                0.949
+    ## tolatoradar                              266.71401  1 < 0.0000000000000002
+    ## led_fenyszoro                            171.39489  1 < 0.0000000000000002
+    ## mp3_lejatszas                             97.07188  1 < 0.0000000000000002
+    ## hifi                                     311.43428  1 < 0.0000000000000002
+    ## reszecskeszuro                           237.22744  1 < 0.0000000000000002
+    ## kulcsnelkuli_inditas                     338.11318  1 < 0.0000000000000002
+    ## azonnal_elviheto                         254.39438  1 < 0.0000000000000002
+    ## futoszalas_szelvedo                        0.15821  1                0.691
+    ## kihangosito                              324.33973  1 < 0.0000000000000002
+    ## x8_hangszoro                               3.67369  1                0.055
+    ## tolatokamera                              88.16404  1 < 0.0000000000000002
+    ## bemutato_jarmu                           107.84286  1 < 0.0000000000000002
+    ## kiegeszito_fenyszoro                       0.00260  1                0.959
+    ## erosito_kimenet                          144.84825  1 < 0.0000000000000002
+    ## sportfutomu                              150.39953  1 < 0.0000000000000002
+    ## keveset_futott                           215.16180  1 < 0.0000000000000002
+    ## dokumentumok                               0.18090  1                0.671
+    ## elso_hatso_parkoloradar                  523.18255  1 < 0.0000000000000002
+    ## start_stop_motormegallito_rendszer       581.82654  1 < 0.0000000000000002
+    ## cd_s_autoradio                            32.58781  1    0.000000011392735
+    ## garazsban_tartott                         80.27911  1 < 0.0000000000000002
+    ## frissen_szervizelt                        50.77520  1    0.000000000001036
+    ## borkormany                               396.83480  1 < 0.0000000000000002
+    ## kulcsnelkuli_nyitorendszer                 5.12726  1                0.024
+    ## bukolampa                                  1.33040  1                0.249
+    ## android_auto                             289.87838  1 < 0.0000000000000002
+    ## apple_car_play                           325.42578  1 < 0.0000000000000002
+    ## eds_elektronikus_differencialzar         136.92307  1 < 0.0000000000000002
+    ## afa_visszaigenyelheto                     53.15941  1    0.000000000000308
+    ## automatikus_segelyhivo                   306.63310  1 < 0.0000000000000002
+    ## taviranyito                                3.49193  1                0.062
+    ## amerikai_modell                           19.44130  1    0.000010373926443
+    ## price_diff                              1737.79403  1 < 0.0000000000000002
+    ## GLOBAL                                  6930.32022 61 < 0.0000000000000002
 
 ``` r
 predict_quantile_prob <- function(.fit, .data, .probs = c(.25, .5, .75), .keep_predictor = TRUE) {
@@ -1027,7 +1139,7 @@ cox_design_df %>%
 
     ## Warning: Removed 21 rows containing missing values (geom_textline).
 
-![](figures/unnamed-chunk-27-1.png)<!-- -->
+![](figures/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 cox_design_df %>% 
@@ -1055,7 +1167,7 @@ cox_design_df %>%
 
     ## Warning: Width not defined. Set with `position_dodge(width = ?)`
 
-![](figures/unnamed-chunk-28-1.png)<!-- -->
+![](figures/unnamed-chunk-32-1.png)<!-- -->
 
 ### Effect of year
 
@@ -1085,4 +1197,138 @@ cox_design_df %>%
 
     ## Warning: Width not defined. Set with `position_dodge(width = ?)`
 
-![](figures/unnamed-chunk-29-1.png)<!-- -->
+![](figures/unnamed-chunk-33-1.png)<!-- -->
+
+## Robustness check
+
+``` r
+set.seed(123)
+
+surv_cv_df <- total_surv_df %>% 
+  filter(price_diff <= quantile(price_diff, .95) & price_diff >= quantile(price_diff, .05)) %>% 
+  filter(duration > 0) %>% 
+  sample_n(n_used)
+
+x_cv <- surv_cv_df %>%
+  select(- duration, - sold) %>% 
+  recipe() %>% 
+  step_dummy(all_nominal()) %>% 
+  prep() %>% 
+  juice() %>% 
+  as.matrix()
+
+y_cv <- surv_cv_df %>%
+  select(time = duration, status = sold) %>% 
+  as.matrix()
+
+tictoc::tic(str_c("surv_lasso", n_used))
+cvfit <- cv.glmnet(x_cv, y_cv, family = "cox", type.measure = "C")
+granatlib::stoc()
+```
+
+    ## surv_lasso10000: 20.675 sec elapsed
+
+``` r
+x <- total_surv_df %>% 
+  filter(price_diff <= quantile(price_diff, .95) & price_diff >= quantile(price_diff, .05)) %>% 
+  filter(duration > 0) %>% 
+  select(- duration, - sold)
+
+y <- total_surv_df %>%
+  filter(price_diff <= quantile(price_diff, .95) & price_diff >= quantile(price_diff, .05)) %>% 
+  filter(duration > 0) %>% 
+  select(time = duration, status = sold) %>% 
+  as.matrix()
+
+fit_1se_r <- glmnet(x, y, family = "cox", lambda = cvfit$lambda.1se)
+```
+
+``` r
+plot(cvfit)
+```
+
+![](figures/unnamed-chunk-35-1.png)<!-- -->
+
+``` r
+cv_vip_r <- vip::vi(cvfit)
+```
+
+``` r
+cv_vip_r %>% 
+  head(30) %>% 
+  mutate(Sign = ifelse(Sign == "POS", "+", "-")) %>% 
+  kable_output(round_digits = 4, same_digits = TRUE)
+```
+
+| Variable                         | Importance | Sign |
+|:---------------------------------|:----------:|:----:|
+| mozgasserult                     |   0.3384   |  \-  |
+| brand_trabant                    |   0.2861   |  \-  |
+| erosito_kimenet                  |   0.2557   |  \+  |
+| bemutato_jarmu                   |   0.2284   |  \-  |
+| price_diff                       |   0.2196   |  \-  |
+| x4ws_osszkerekkormanyzas         |   0.2111   |  \-  |
+| kulcsnelkuli_nyitorendszer       |   0.1873   |  \-  |
+| bukolampa                        |   0.1789   |  \-  |
+| rendelheto                       |   0.1228   |  \+  |
+| autobeszamitas_lehetseges        |   0.0988   |  \+  |
+| keramia_fektarcsak               |   0.0959   |  \+  |
+| reszecskeszuro                   |   0.0950   |  \-  |
+| x2_hangszoro                     |   0.0849   |  \-  |
+| tabla_felismero_funkcio          |   0.0848   |  \-  |
+| frissen_szervizelt               |   0.0742   |  \+  |
+| krom_felni                       |   0.0719   |  \+  |
+| garazsban_tartott                |   0.0711   |  \+  |
+| eds_elektronikus_differencialzar |   0.0707   |  \-  |
+| brand_hyundai                    |   0.0681   |  \+  |
+| taviranyito                      |   0.0655   |  \-  |
+| brand_Other                      |   0.0651   |  \-  |
+| cd_tar                           |   0.0578   |  \-  |
+| memorias_vezetoules              |   0.0574   |  \-  |
+| mp3_lejatszas                    |   0.0565   |  \-  |
+| led_fenyszoro                    |   0.0497   |  \-  |
+| savtarto_rendszer                |   0.0486   |  \-  |
+| bi_xenon_fenyszoro               |   0.0486   |  \-  |
+| radios_magno                     |   0.0445   |  \+  |
+| motorbeszamitas_lehetseges       |   0.0439   |  \+  |
+| dokumentumok                     |   0.0418   |  \+  |
+
+``` r
+coef_1se_r <- broom::tidy(fit_1se_r) %>% 
+  mutate(exp_estimate = exp(estimate))
+```
+
+``` r
+fit_cox_r <- coef_1se_r %>% 
+  pull(term) %>% 
+  select(.data = total_surv_df, duration, sold) %>% 
+  filter(price_diff <= quantile(price_diff, .95) & price_diff >= quantile(price_diff, .05)) %>% 
+  coxph(formula = Surv(duration, sold) ~ .)
+```
+
+``` r
+full_join(tidy(fit_cox, conf.int = T), tidy(fit_cox_r, conf.int = T), by = "term") %>% 
+  filter(!is.na(estimate.x) & !is.na(estimate.y)) %>% 
+  pivot_longer(-term) %>% 
+  mutate(
+    model = ifelse(str_detect(name, ".x"), "All observations", "Inter-ventile"),
+    name = str_remove(name, ".x|.y"),
+    term = NiceName(term)
+  ) %>% 
+  pivot_wider() %>% 
+  mutate(g = row_number() / n() > .5) %>% 
+  ggplot(aes(y = term, color = model)) +
+  # facet_wrap(~ g, scales = "free_y") +
+  geom_vline(xintercept = 0) +
+  geom_point(aes(x = estimate), position = position_dodge(width = .5), alpha = .8) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), position = position_dodge(width = .5), alpha = .8) +
+  theme_bw() +
+  theme(
+    strip.text = element_blank(),
+  ) +
+  labs(
+    color = NULL, x = "Estimated coefficient"
+  )
+```
+
+![](figures/coefs-1.png)<!-- -->
